@@ -1,32 +1,57 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>Socket.IO chat</title>
-    <link rel="stylesheet" href="styles.css">
+    <link href="styles.css" type="text/css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="chatApp">
+        <ul id="messages"></ul>
+        <form action="">
+          <input id="m" autocomplete="off" /><button>Send</button>
+        </form>
+      </div>
+      <div class="allusers">
+        <h3>Connected Users</h3>
+        <ul id="connected"></ul>
+      </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
       $(function () {
         var socket = io();
-        $('form').submit(function(e) {
+        $("form").submit(function (e) {
           e.preventDefault(); // prevents page reloading
-          socket.emit('chat message', $('#m').val());
-          $('#m').val('');
+          socket.emit("chat message", $("#m").val());
+          $("#m").val("");
           return false;
         });
-        socket.on('chat message', function(msg){
-            $('#messages').append($('<li>').text(msg));
+        socket.on("chat message", function (msg) {
+          $("#messages").append($("<li>").text(msg));
+        });
+        socket.on("welcome", function (msg) {
+          $("#messages").append($("<li>").text(msg));
+        });
+
+        socket.on("addingYou", function (msg) {
+          let username = msg.username;
+          let usernames = msg.allusernames;
+          $("#connected").empty();
+          usernames.forEach((element) => {
+            $("#connected").append($("<li>").text(element));
+          });
+        });
+        socket.on("colorChange", function (msg) {
+          let username = msg.username;
+          let color = msg.color.match(/.{1,2}/g);
+          $("#connected li").each(function () {
+            console.log(this.innerText);
+          });
         });
       });
     </script>
-  </head>
-  <body>
-    <div class="chatApp">
-        <ul id="messages"></ul>
-        <form action="">
-            <input id="m" autocomplete="off" />
-            <button>Send</button>
-        </form>
-    </div>
   </body>
 </html>
