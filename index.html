@@ -22,35 +22,64 @@
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script>
       $(function () {
-        var socket = io();
+        var socket = io.connect();
         $("form").submit(function (e) {
           e.preventDefault(); // prevents page reloading
-          socket.emit("chat message", $("#m").val());
+          socket.emit("initial message", $("#m").val());
+
           $("#m").val("");
           return false;
         });
-        socket.on("chat message", function (msg) {
-          $("#messages").append($("<li>").text(msg));
+
+        let setBold = false;
+        socket.on("initial message", function (msg) {
+          setBold = true;
+          appendSelfString(msg.msg, msg.time, msg.person);
+        });
+        socket.on("sendEveryoneElse", function (msg) {
+          setBold = false;
+          appendOthersStrings(msg.msg, msg.time, msg.person);
         });
         socket.on("welcome", function (msg) {
-          $("#messages").append($("<li>").text(msg));
+          $("#messages").append($("<li>").text(msg).addClass("initalusername"));
         });
+        socket.on("colorchange", function (msg) {
+          let messages = document.getElementsByClassName(msg.username);
+          for (let i = 0; i < messages.length; i++) {
+            messages[i].style.color = "#" + msg.color;
+          }
+        });
+        function appendOthersStrings(msg, time, person) {
+          $("#messages").append(buildString(msg, time, person));
+        }
+        function appendSelfString(msg, time, person) {
+          $("#messages").append(buildString(msg, time, person));
+          socket.emit("sendEveryoneElse", {
+            msg: msg,
+            time: time,
+            person: person,
+          });
+        }
+        function buildString(msg, time, person) {
+          let $timeSpan = $('<span class="time" />').text(time + " ");
+          let $usernameSpan = $('<span class="username" />')
+            .addClass(person.username)
+            .text(person.username + " ");
+          let $messageSpan = $('<span class="messagebody" />').text(msg);
+          if (setBold) {
+            $messageSpan.addClass("bold");
+          }
+          if (person.color !== "none") {
+            $usernameSpan.css("color", "#" + person.color);
+          }
+          let $fullMessage = $('<li class="fullMessage" />').append(
+            $timeSpan,
+            $usernameSpan,
+            $messageSpan
+          );
 
-        socket.on("addingYou", function (msg) {
-          let username = msg.username;
-          let usernames = msg.allusernames;
-          $("#connected").empty();
-          usernames.forEach((element) => {
-            $("#connected").append($("<li>").text(element));
-          });
-        });
-        socket.on("colorChange", function (msg) {
-          let username = msg.username;
-          let color = msg.color.match(/.{1,2}/g);
-          $("#connected li").each(function () {
-            console.log(this.innerText);
-          });
-        });
+          return $fullMessage;
+        }
       });
     </script>
   </body>

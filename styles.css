@@ -59,3 +59,10 @@ form button {
 #messages li:nth-child(odd) {
   background: #eee;
 }
+.bold {
+  font-weight: bold;
+}
+.initalusername {
+  font-weight: bold;
+  font-size: 2rem;
+}
