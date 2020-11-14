@@ -11,6 +11,7 @@ app.get("/styles.css", (req, res) => {
 
 let totalPeople = 0;
 let usernames = [];
+let messages = [];
 io.on("connection", (socket) => {
   totalPeople += 1;
   let person = {
@@ -19,7 +20,8 @@ io.on("connection", (socket) => {
   };
   usernames.push(person.username);
   socket.emit("welcome", "You are " + person.username);
-
+  socket.emit("savedMessages", messages);
+  updatePeopleList();
   socket.on("initial message", (msg) => {
     if (msg[0] == "/") {
       changeUserColor(msg);
@@ -31,18 +33,33 @@ io.on("connection", (socket) => {
       });
     }
   });
+  //sending messages to everyone
   socket.on("sendEveryoneElse", (msg) => {
     socket.broadcast.emit("sendEveryoneElse", msg);
   });
+
+  socket.on("savedMessages", (msg) => {
+    console.log(msg);
+    messages.push(msg);
+
+    if (messages.length > 200) {
+      messages.shift();
+    }
+  });
   socket.on("disconnect", () => {
     for (let i = 0; i < usernames.length; i++) {
-      console.log(usernames[i]);
       if (usernames[i] == person.username) {
         usernames.splice(i, 1);
       }
     }
+    updatePeopleList();
   });
-
+  function updatePeopleList() {
+    io.emit("currentUsers", {
+      username: person.username,
+      allusernames: usernames,
+    });
+  }
   function buildTime() {
     let datetime = new Date();
     let dateString =
@@ -64,6 +81,7 @@ io.on("connection", (socket) => {
           }
           person.username = newUsername;
           socket.emit("welcome", "You are " + person.username);
+          updatePeopleList();
         } else {
           socket.emit("welcome", "This username is already taken.");
         }

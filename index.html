@@ -13,7 +13,7 @@
         </form>
       </div>
       <div class="allusers">
-        <h3>Connected Users</h3>
+        <h3 class="userTitle">Connected Users</h3>
         <ul id="connected"></ul>
       </div>
     </div>
@@ -41,7 +41,9 @@
           appendOthersStrings(msg.msg, msg.time, msg.person);
         });
         socket.on("welcome", function (msg) {
-          $("#messages").append($("<li>").text(msg).addClass("initalusername"));
+          $("#messages").prepend(
+            $("<li>").text(msg).addClass("initalusername")
+          );
         });
         socket.on("colorchange", function (msg) {
           let messages = document.getElementsByClassName(msg.username);
@@ -49,18 +51,47 @@
             messages[i].style.color = "#" + msg.color;
           }
         });
+        socket.on("currentUsers", function (msg) {
+          let username = msg.username;
+          let usernames = msg.allusernames;
+          $("#connected").empty();
+          usernames.forEach((element) => {
+            $("#connected").append($("<li>").text(element));
+          });
+          //socket.emit("showListForEveryOne", msg);
+        });
+        socket.on("savedMessages", function (msg) {
+          msg.forEach((element) => {
+            $("#messages").prepend($("<li>").append(element));
+          });
+        });
+
         function appendOthersStrings(msg, time, person) {
-          $("#messages").append(buildString(msg, time, person));
+          updateScroll();
+          let updatedMessage = buildString(msg, time, person);
+          $("#messages").prepend(updatedMessage);
         }
         function appendSelfString(msg, time, person) {
-          $("#messages").append(buildString(msg, time, person));
+          updateScroll();
+          let updatedMessage = buildString(msg, time, person);
+          $("#messages").prepend(updatedMessage);
           socket.emit("sendEveryoneElse", {
             msg: msg,
             time: time,
             person: person,
           });
+          setBold = false;
+          socket.emit("savedMessages", buildString(msg, time, person).html());
+        }
+        function updateScroll() {
+          const messagebox = document.getElementById("messages");
+          messagebox.scrollTop = messagebox.scrollHeight;
         }
         function buildString(msg, time, person) {
+          msg = msg.replace(":)", "😁");
+          msg = msg.replace(":(", "🙁");
+          msg = msg.replace(":o", "😲");
+
           let $timeSpan = $('<span class="time" />').text(time + " ");
           let $usernameSpan = $('<span class="username" />')
             .addClass(person.username)
